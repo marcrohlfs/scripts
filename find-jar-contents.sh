@@ -11,11 +11,15 @@ NAME
   ${BASENAME} -- finds JAR files containing a specified entry
 
 SYNOPSIS
-  ${BASENAME} -s search-string [-d directory] [-e extensions]
+  ${BASENAME} {-c class-name | -s search-string} [-d directory] [-e extensions]
 
 DESCRIPTION
-  Recursively searches a directory for JAR or other archive files and lists
-  those containing the requested entry.
+  Recursively searches a directory for JAR or other archive files and lists those
+  containing the requested entry.
+
+  -c class-name
+      The name of a class entry contained by the archives to be found - can be either the
+      simple class name or the fully qualified class name.
 
   -d directory
       The directory containing the archives to be found. If the directory option
@@ -30,8 +34,9 @@ DESCRIPTION
 "
 
 # Get vars from options.
-while getopts "s:d:e:" OPTFLAG; do
+while getopts "c:d:e:s:" OPTFLAG; do
   case "${OPTFLAG}" in
+    c) CLASS=${OPTARG};;
     d) DIRECTORY=${OPTARG};;
     e) EXTENSIONS=${OPTARG};;
     s) SEARCH_STRING=${OPTARG};;
@@ -42,10 +47,16 @@ while getopts "s:d:e:" OPTFLAG; do
 done
 
 # Check if the search string is defined.
-if [ -z "${SEARCH_STRING}" ]; then
-  echo "Please specify the search string"
+if [[ -n "${SEARCH_STRING}" && -n "${CLASS}" ]]; then
+  echo "Please specify only one of the search options: search string or class name"
   echo "${USAGE_TEXT}"
   exit 1
+elif [[ -z "${SEARCH_STRING}" && -z "${CLASS}" ]]; then
+  echo "Please specify one of the search options: search string or class name"
+  echo "${USAGE_TEXT}"
+  exit 1
+elif [ -n "${CLASS}" ]; then
+  SEARCH_STRING="$( echo "${CLASS}" | sed 's:\.:/:g' ).class"
 fi
 
 # Check the given directory.
