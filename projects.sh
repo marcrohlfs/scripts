@@ -6,9 +6,12 @@
 
 ### Check passed arguments and initialse variables for command execution ###
 
+# Define the base directory, where all managed projects are stored.
+PROJECTS_BASEDIR=${HOME}/projects
+
 # Set help and usage texts.
 BASENAME=$( basename $0)
-USAGE="${BASENAME} [-h]"
+USAGE="${BASENAME} [-c project-name | -h]"
 USAGE_TEXT="usage: ${USAGE}"
 MAN_TEXT="
 NAME
@@ -18,19 +21,25 @@ SYNOPSIS
   ${USAGE}
 
 DESCRIPTION
-  Manages projects on a development workstation.
+  Manages projects on a development workstation. Each project is stored in a
+  directory below '~/projects'.
 
   The options are as follows:
+
+  -c project-name
+      Create a new project with the given name. This option will create a
+      directory with the given project name as sub directory of '~/projects'.
 
   -h
       Print this help.
 "
 
 # Pass the option arguments to variables.
-while getopts "h" OPTFLAG; do
+while getopts "c:h" OPTFLAG; do
   case "${OPTFLAG}" in
 
     # Main (command) arguments
+    c) NEW_PROJECT=${OPTARG};;
     h) PRINT_HELP=true;;
 
     # Unknown arguments
@@ -41,9 +50,10 @@ done
 
 # Ensure that exactly one of the main command arguments is specified.
 NUM_COMMAND_ARGS=0
+[[ -n ${NEW_PROJECT} ]] && NUM_COMMAND_ARGS=$( expr ${NUM_COMMAND_ARGS} + 1 )
 [[ -n ${PRINT_HELP} ]] && NUM_COMMAND_ARGS=$( expr ${NUM_COMMAND_ARGS} + 1 )
 if [[ "${NUM_COMMAND_ARGS}" != "1" ]]; then
-  echo "Please specify exactly one of the arguments [-h]" >&2
+  echo "Please specify exactly one of the arguments [-c | -h]" >&2
   echo "${USAGE_TEXT}" >&2
   exit 1
 fi
@@ -52,4 +62,21 @@ fi
 if [ "${PRINT_HELP}" == "true" ]; then
   echo "${MAN_TEXT}"
   exit 0
+fi
+
+
+
+### Create new project ###
+if [ -n "${NEW_PROJECT}" ]; then
+
+  # Create the project directory
+  NEW_PROJECT_DIR=${PROJECTS_BASEDIR}/${NEW_PROJECT}
+  if [ ! -e "${NEW_PROJECT_DIR}" ]; then
+    mkdir -p "${NEW_PROJECT_DIR}"
+    echo "Created project directory ${NEW_PROJECT_DIR}"
+  elif [ ! -d "${NEW_PROJECT_DIR}" ]; then
+    echo "${PROJECTS_BASEDIR}/${NEW_PROJECT} already exists but isn't a directory" >&2
+    exit 1
+  fi
+
 fi
