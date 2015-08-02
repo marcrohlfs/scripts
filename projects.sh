@@ -7,11 +7,11 @@
 ### Check passed arguments and initialse variables for command execution ###
 
 # Define the base directory, where all managed projects are stored.
-PROJECTS_BASEDIR=${HOME}/projects
+[[ -z ${PROJECTS_BASEDIR} ]] && PROJECTS_BASEDIR=${HOME}/projects
 
 # Set help and usage texts.
 BASENAME=$( basename $0)
-USAGE="${BASENAME} [-c project-name | -h]"
+USAGE="${BASENAME} [-c project-name | -h] [-b basedir]"
 USAGE_TEXT="usage: ${USAGE}"
 MAN_TEXT="
 NAME
@@ -26,6 +26,11 @@ DESCRIPTION
 
   The options are as follows:
 
+  -b basedir
+      Overwrites the base directory, where all managed projects are stored. The
+      default base directory is '~/projects'. It can also be overwritten using
+      the environment variable 'PROJECTS_BASEDIR'.
+
   -c project-name
       Create a new project with the given name. This option will create a
       directory with the given project name as sub directory of '~/projects'.
@@ -35,12 +40,15 @@ DESCRIPTION
 "
 
 # Pass the option arguments to variables.
-while getopts "c:h" OPTFLAG; do
+while getopts "b:c:h" OPTFLAG; do
   case "${OPTFLAG}" in
 
     # Main (command) arguments
     c) NEW_PROJECT=${OPTARG};;
     h) PRINT_HELP=true;;
+
+    # Overwritable arguments
+    b) PROJECTS_BASEDIR=${OPTARG};;
 
     # Unknown arguments
     ?) echo "${USAGE_TEXT}" >&2
