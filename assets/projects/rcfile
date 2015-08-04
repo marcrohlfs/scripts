@@ -1,0 +1,93 @@
+##### RC file to initialise project settings #####
+
+
+
+### Initialise global variables ###
+
+# The temporary file that contains the project working directory. It must
+# be available here and in the Terminal start scripts for the projects.
+export PROJECTS_TMP_PWD_FILE=${TMPDIR}/project-working-dir.txt
+
+# The RC file setting the custom environment for each project.
+# It is also used to identify the project directories.
+export PROJECTS_RCFILE=.projectrc
+
+
+
+### Change to working directory ###
+
+# Rules (ordered by relevance):
+# 1. When the temporary file with the project working directory exists, the Terminal must have been started
+#    using the start script of a project. The current working directory must be set to this directory.
+# 2. The current working directory is not the users' home directory. The reasons for this may be:
+#     - Terminal may have been started with custom working directory (non-Mac).
+#     - Terminal may have been started with 'New Terminal at Folder' (Mac).
+#     - IntelliJ Terminal may have been started.
+#    In this case it's unclear (so far) if the current working directory is part of a project.
+# 3. The current working directory is the users' home directory. In this case a standard (non-project)
+#    Terminal should have been started.
+
+# Determine the working directory and change to it.
+if [ -f "${PROJECTS_TMP_PWD_FILE}" ]; then
+  WORKING_DIR=$( cat ${PROJECTS_TMP_PWD_FILE} )
+  rm ${PROJECTS_TMP_PWD_FILE}
+  cd ${WORKING_DIR}
+elif [ "${HOME}" != $( pwd ) ]; then
+  WORKING_DIR=$( pwd -P )
+fi
+
+
+
+### Initialse project environment ###
+
+# Identify the project (base) directory and collect project source scripts.
+if [ -n "${WORKING_DIR}" ]; then
+
+  # Check all directories (bottom-up) for source scripts and project directory.
+  PROJECT_SOURCE_SCRIPTS=()
+  while [ -n "${WORKING_DIR}" ]; do
+
+    # Collect the project source scripts.
+    if [ -f "${WORKING_DIR}/${PROJECTS_RCFILE}" ]; then
+      PROJECT_SOURCE_SCRIPTS+="${WORKING_DIR}/${PROJECTS_RCFILE}"
+
+      # The first (deepest) directory with a project source script is the project directory.
+      if [ -z "${PROJECT_DIR}" ]; then
+        PROJECT_DIR=${WORKING_DIR}
+      fi
+    fi
+
+    # Iterate further up or break the loop.
+    if [ "${WORKING_DIR}" = "${HOME}" ]; then
+      WORKING_DIR=""
+    else
+      WORKING_DIR="${WORKING_DIR%/*}"
+    fi
+  done
+fi
+
+# Initialse the project environment settings.
+if [ -n "${PROJECT_DIR}" ]; then
+
+  # Set variable pointing to the project base dir
+  if [ -z "${PROJECT_DIR}" ]; then
+    PROJECT_DIR=$( pwd )
+  fi
+  export PROJECT_DIR
+  export PD=${PROJECT_DIR}
+
+  # Source the found project source scripts in reverse order.
+  for (( idx=${#PROJECT_SOURCE_SCRIPTS[@]} ; idx>0 ; idx-- )) ; do
+    echo "Sourcing ${PROJECT_SOURCE_SCRIPTS[idx]}"
+    source ${PROJECT_SOURCE_SCRIPTS[idx]}
+  done
+
+  # There may be scripts especially for the project. Add them to the path.
+  if [ -d ${PROJECT_DIR}/bin ]; then
+    PATH=${PROJECT_DIR}/bin:$PATH
+  fi
+
+  # Each project has its own history.
+  export HISTFILE=${PROJECT_DIR}/.project_history
+
+fi
