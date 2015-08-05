@@ -35,8 +35,17 @@ ASSETS_DIR=${DIRNAME}/assets/${BASENAME%.*}
 # Define the base directory, where all managed projects are stored.
 [[ -z ${PROJECTS_BASEDIR} ]] && PROJECTS_BASEDIR=${HOME}/projects
 
+# Define source and name for the script that starts the project Terimnal.
+if [ $( uname ) == "Darwin" ]; then
+  [[ -z ${PROJECTS_TERMINAL_CMD_TEMPLATE} ]] && PROJECTS_TERMINAL_CMD_TEMPLATE=${ASSETS_DIR}/mac-terminal.command
+  [[ -z ${PROJECTS_TERMINAL_CMD_FILE_NAME} ]] && PROJECTS_TERMINAL_CMD_FILE_NAME=_terminal.command
+else
+  [[ -z ${PROJECTS_TERMINAL_CMD_TEMPLATE} ]] && PROJECTS_TERMINAL_CMD_TEMPLATE="UNSUPPORTED_OS"
+  [[ -z ${PROJECTS_TERMINAL_CMD_FILE_NAME} ]] && TERMINAL_START_SCRIPT_NAME=_terminal.sh
+fi
+
 # Set help and usage texts.
-USAGE="${BASENAME} [-c project-name | -h] [-b basedir]"
+USAGE="${BASENAME} [-c project-name | -h] [-b basedir] [-t terminal-start-script-file-name] [-T terminal-start-script-template]"
 USAGE_TEXT="usage: ${USAGE}"
 MAN_TEXT="
 NAME
@@ -47,8 +56,15 @@ SYNOPSIS
 
 DESCRIPTION
   Manages projects on a development workstation. Each project is stored in a
-  directory below '~/projects', can define project-specific settings
-  (environment variables, aliases, etc.) and has its own history.
+  directory below '~/projects'. It:
+   - can define project-specific settings (environment variables, aliases, etc.)
+   - has its own history
+   - has its own Terminal start script
+   - can start the Terminal using a profile (on Mac)
+
+  To provide a Mac Terminal profile that should be used for a project Terminal,
+  create a profile in the settings of the Terminal application and export it to
+  a file that is replaced in project directory or on of its parent directories.
 
   The options are as follows:
 
@@ -60,14 +76,28 @@ DESCRIPTION
   -c project-name
       Create a new project with the given name. This option will create a
       directory with the given project name as sub directory of '~/projects' and
-      place a '.projectrc' file in the new project directory.
+      place a '.projectrc' file and a Terminal start script in the new project
+      directory.
 
   -h
       Print this help.
+
+  -t terminal-start-script-file-name
+      Overwrites the name of the script that starts the Terminal for a project.
+      The default name is '_terminal.command' on Mac and '_terminal.sh' on other
+      enviornments. The name of the start script can also be overwritten using
+      the environment variable 'PROJECTS_TERMINAL_CMD_FILE_NAME'.
+
+  -T terminal-start-script-template
+      Overwrites the template for the script that starts the Terminal for a
+      project. The default file is '${ASSETS_DIR}/mac-terminal.command'
+      for Mac. Support for other enviornments is currently not implemented. The
+      name of the start script can also be overwritten using the environment
+      variable 'PROJECTS_TERMINAL_CMD_TEMPLATE'.
 "
 
 # Pass the option arguments to variables.
-while getopts "b:c:h" OPTFLAG; do
+while getopts "b:c:ht:T:" OPTFLAG; do
   case "${OPTFLAG}" in
 
     # Main (command) arguments
@@ -76,6 +106,8 @@ while getopts "b:c:h" OPTFLAG; do
 
     # Overwritable arguments
     b) PROJECTS_BASEDIR=${OPTARG};;
+    t) PROJECTS_TERMINAL_CMD_FILE_NAME=${OPTARG};;
+    T) PROJECTS_TERMINAL_CMD_TEMPLATE=${OPTARG};;
 
     # Unknown arguments
     ?) echo "${USAGE_TEXT}" >&2
@@ -97,6 +129,14 @@ fi
 if [ "${PRINT_HELP}" == "true" ]; then
   echo "${MAN_TEXT}"
   exit 0
+fi
+
+# Check if there's an existsing command file - if a target file name is specified.
+if [[ -n "${PROJECTS_TERMINAL_CMD_FILE_NAME}" && ! -f "${PROJECTS_TERMINAL_CMD_TEMPLATE}" ]]; then
+  echo "Terminal start script template ${PROJECTS_TERMINAL_CMD_TEMPLATE} not found." >&2
+  echo "Did You provide a custom template path that doesn't exist?" >&2
+  echo "Otherwise Your operating system ($( uname )) may not be supported so far. In this case Your pull request may help ..." >&2
+  exit 1
 fi
 
 
@@ -143,6 +183,12 @@ if [ -n "${NEW_PROJECT}" ]; then
   if [ ! -f "${NEW_PROJECT_DIR}/${PROJECTS_RCFILE}" ]; then
     echo "# RC file for project ${NEW_PROJECT}" > "${NEW_PROJECT_DIR}/${PROJECTS_RCFILE}"
     echo "Created project source script ${NEW_PROJECT_DIR}/${PROJECTS_RCFILE}"
+  fi
+
+  # Copy the Terminal start script to the project directory - if the target file name is specified.
+  if [[ -n "${PROJECTS_TERMINAL_CMD_FILE_NAME}" && ! -f "${NEW_PROJECT_DIR}/${PROJECTS_TERMINAL_CMD_FILE_NAME}" ]]; then
+    cp "${PROJECTS_TERMINAL_CMD_TEMPLATE}" "${NEW_PROJECT_DIR}/${PROJECTS_TERMINAL_CMD_FILE_NAME}"
+    echo "Created project Terminal start script ${NEW_PROJECT_DIR}/${PROJECTS_TERMINAL_CMD_FILE_NAME}"
   fi
 
 fi
