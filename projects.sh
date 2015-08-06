@@ -45,7 +45,7 @@ else
 fi
 
 # Set help and usage texts.
-USAGE="${BASENAME} [-c project-name | -h] [-b basedir] [-t terminal-start-script-file-name] [-T terminal-start-script-template]"
+USAGE="${BASENAME} [-c project-name | -h | -l] [-b basedir] [-t terminal-start-script-file-name] [-T terminal-start-script-template]"
 USAGE_TEXT="usage: ${USAGE}"
 MAN_TEXT="
 NAME
@@ -82,6 +82,9 @@ DESCRIPTION
   -h
       Print this help.
 
+  -l
+      Print a list of all projects.
+
   -t terminal-start-script-file-name
       Overwrites the name of the script that starts the Terminal for a project.
       The default name is '_terminal.command' on Mac and '_terminal.sh' on other
@@ -97,12 +100,13 @@ DESCRIPTION
 "
 
 # Pass the option arguments to variables.
-while getopts "b:c:ht:T:" OPTFLAG; do
+while getopts "b:c:hlt:T:" OPTFLAG; do
   case "${OPTFLAG}" in
 
     # Main (command) arguments
     c) NEW_PROJECT=${OPTARG};;
     h) PRINT_HELP=true;;
+    l) PRINT_LIST=true;;
 
     # Overwritable arguments
     b) PROJECTS_BASEDIR=${OPTARG};;
@@ -119,8 +123,9 @@ done
 NUM_COMMAND_ARGS=0
 [[ -n ${NEW_PROJECT} ]] && NUM_COMMAND_ARGS=$( expr ${NUM_COMMAND_ARGS} + 1 )
 [[ -n ${PRINT_HELP} ]] && NUM_COMMAND_ARGS=$( expr ${NUM_COMMAND_ARGS} + 1 )
+[[ -n ${PRINT_LIST} ]] && NUM_COMMAND_ARGS=$( expr ${NUM_COMMAND_ARGS} + 1 )
 if [[ "${NUM_COMMAND_ARGS}" != "1" ]]; then
-  echo "Please specify exactly one of the arguments [-c | -h]" >&2
+  echo "Please specify exactly one of the arguments [-c | -h | -l]" >&2
   echo "${USAGE_TEXT}" >&2
   exit 1
 fi
@@ -162,6 +167,16 @@ if [ -z ${PROJECTS_RCFILE} ]; then
     echo "Aborting. Please add 'source ${ASSETS_DIR}/rcfile' to Your Terminal startup files!" >&2
     exit 1
   fi
+fi
+
+
+
+### Print list of projects ###
+if [ "${PRINT_LIST}" == "true" ]; then
+
+  # Use the project source scripts to identify the projects.
+  find ${PROJECTS_BASEDIR} -name "${PROJECTS_RCFILE}" -maxdepth 5 | sed "s:${PROJECTS_BASEDIR}/::g" | sed "s:/[^/]*$::g"
+
 fi
 
 
