@@ -17,6 +17,14 @@ the ``-h`` option.
 
 The scripts should work with most Unix environments, but they have only been tested with Mac and ZSH.
 
+Exception: _projects.sh_ and its managed project environments managed by _projects.sh_ use Mac specific functionality to
+start the project Terminal. The currently implementations should be easy to extend. Pull requests appreciated ...
+
+## Known Issues
+
+* _projects.sh_:
+  * Project names must not contain white spaces.
+
 ## Author and Maintainer
 
 [Marc Rohlfs](https://github.com/marcrohlfs)
