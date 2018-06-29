@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+if [[ -z "${SENCHA_VERSION}" ]]; then
+  SENCHA_VERSION=latest
+fi
+
+WORKDIR=""
+VOLUME_HOST=$(pwd -P)
+VOLUME_CONT="/code"
+while [[ ! -d "${VOLUME_HOST}/.remote-packages" ]]; do
+  WORKDIR="$(basename ${VOLUME_HOST})/${WORKDIR}"
+  VOLUME_HOST=$(dirname ${VOLUME_HOST})
+  if [[ "${VOLUME_HOST}" == "/" ]]; then
+    WORKDIR=""
+    VOLUME_HOST=$(pwd -P)
+    break
+  fi
+done
+WORKDIR="${VOLUME_CONT}/${WORKDIR}"
+
+echo "Running sencha via Docker with:"
+echo "  Version: ${SENCHA_VERSION}"
+echo "  Volume:  ${VOLUME_HOST}:${VOLUME_CONT}"
+echo "  Workdir: ${WORKDIR}"
+
+TMP_ENV_FILE=$(mktemp)
+env | grep -i _PROXY > ${TMP_ENV_FILE}
+
+docker run --rm --env-file ${TMP_ENV_FILE} --volume ${VOLUME_HOST}:${VOLUME_CONT} --workdir ${WORKDIR} poum/senchacmd:${SENCHA_VERSION} $*
+EXIT_CODE=$?
+
+rm ${TMP_ENV_FILE}
+
+exit ${EXIT_CODE}
