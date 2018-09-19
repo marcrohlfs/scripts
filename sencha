@@ -26,8 +26,13 @@ echo "  Workdir: ${WORKDIR}"
 TMP_ENV_FILE=$(mktemp)
 env | grep -i _PROXY > ${TMP_ENV_FILE}
 
+SENCHA_LOCKDIR=${VOLUME_HOST}/sencha.lock
+while ! mkdir ${SENCHA_LOCKDIR}; do
+  sleep 5
+done
 docker run --rm --env-file ${TMP_ENV_FILE} --volume ${VOLUME_HOST}:${VOLUME_CONT} --workdir ${WORKDIR} poum/senchacmd:${SENCHA_VERSION} $*
 EXIT_CODE=$?
+rm -rf ${SENCHA_LOCKDIR}
 
 rm ${TMP_ENV_FILE}
 
