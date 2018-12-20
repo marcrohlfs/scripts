@@ -26,7 +26,7 @@ echo "  Workdir: ${WORKDIR}"
 TMP_ENV_FILE=$(mktemp)
 env | grep -i _PROXY > ${TMP_ENV_FILE}
 
-SENCHA_LOCKDIR=${VOLUME_HOST}/sencha.lock
+SENCHA_LOCKDIR=${VOLUME_HOST}/.sencha.lock
 while ! mkdir ${SENCHA_LOCKDIR}; do
   sleep 5
 done
